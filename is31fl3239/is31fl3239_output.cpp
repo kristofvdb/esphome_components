@@ -82,6 +82,15 @@ void IS31FL3239Output::setup() {
     return;
   }
 
+  // turn on all LEDs
+  //
+  for (int channelNo = 0 ; channelNo < 24 ; channelNo++)
+  {
+    set_channel_pwm(channelNo, 0x40);
+    set_channel_scaling(channelNo, 0x80);
+  }   
+    
+/*
   // Sanity check: turn on 1 led
   if (!this->write_byte(0x4c, 0xFF)) {
     ESP_LOGE(TAG, "RESET failed");
@@ -98,7 +107,7 @@ void IS31FL3239Output::setup() {
     this->mark_failed();
     return;
   }
-  
+*/  
   // update
   if (!this->write_byte(IS31FL3239_UPDATE_REG, 0x00)) {
     ESP_LOGE(TAG, "UPDATE failed");
@@ -111,6 +120,26 @@ void IS31FL3239Output::setup() {
   this->loop();
 }
 
+bool IS31FL3239Output::set_channel_scaling(uint8_t channelNo, uint8_t scaling) {
+  uint8_t reg = get_scaling_reg_for_channel(channelNo);
+  if (!this->write_byte(reg, scaling)) {
+    this->status_set_warning();
+    return false;
+  }
+  return true;
+}
+
+bool IS31FL3239Output::set_channel_pwm(uint8_t channelNo, uint8_t pwm) {
+  uint8_t reg = get_PWM_reg_for_channel(channelNo);
+
+  // this only sets the low value of PWM as 8 bit is the only resolution we support
+  if (!this->write_byte(reg, pwm)) {
+    this->status_set_warning();
+    return false;
+  }
+  return true;
+}
+
 void IS31FL3239Output::dump_config() {
   ESP_LOGCONFIG(TAG, "IS31FL3239:");
   //ESP_LOGCONFIG(TAG, "  Mode: 0x%02X", this->mode_);
@@ -120,19 +149,39 @@ void IS31FL3239Output::dump_config() {
   }
 }
 
+uint8_t IS31FL3239Output::get_PWM_reg_for_channel(uint8_t channel) {
+    uint8_t index = channel / (IS31FL3239_PWM_REG_SUB_SIZE/2);
+    uint8_t subIndex = channel % (IS31FL3239_PWM_REG_SUB_SIZE/2);
+
+    uint8_t reg = IS31FL3239_PWM_REG[index] + subIndex*2;
+    ESP_LOGVV(TAG, "Channel %02u: PWM reg=%02x ", channel, reg);
+
+    return reg;
+}
+
+uint8_t IS31FL3239Output::get_scaling_reg_for_channel(uint8_t channel) {
+    uint8_t index = channel / IS31FL3239_SCALING_REG_SUB_SIZE;
+    uint8_t subIndex = channel % IS31FL3239_SCALING_REG_SUB_SIZE;
+
+    uint8_t reg = IS31FL3239_SCALING_REG[index] + subIndex;
+    ESP_LOGVV(TAG, "Channel %02u: Scaling reg=%02x ", channel, reg);
+
+    return reg;
+}
+
 void IS31FL3239Output::loop() {
-  if (this->min_channel_ == 0xFF || !this->update_)
+//  if (this->min_channel_ == 0xFF || !this->update_)
     return;
 
   for (uint8_t channel = this->min_channel_; channel <= this->max_channel_; channel++) {
     uint8_t pwm = this->pwm_amounts_[channel];
     ESP_LOGVV(TAG, "Channel %02u: pwm=%04u ", channel, pwm);
 
-    //uint8_t reg = IS31FL3239_REG_PWM0 + channel;
-    //if (!this->write_byte(reg, pwm)) {
-    //  this->status_set_warning();
-    //  return;
-    //}
+    uint8_t reg = get_PWM_reg_for_channel(channel);
+    if (!this->write_byte(reg, pwm)) {
+      this->status_set_warning();
+      return;
+    }
   }
 
   this->status_clear_warning();
