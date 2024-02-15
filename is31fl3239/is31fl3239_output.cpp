@@ -8,67 +8,50 @@ namespace is31fl3239 {
 
 static const char *const TAG = "is31fl3239";
 
+// This is a minimal implementation
+// Only supports setting the PWM value of a channel with 8 bit PWM
+// No use of diagnostic functionality
+
+
+// --- Registers ---
+// All registers are readable/writable, except reset and update register (0-write triggers functionality)
+const uint8_t IS31FL3239_CTL_REG = 0x00;
+const uint8_t IS31FL3239_PWM_REG[] = { 0x05, 0x11, 0x1d, 0x25, 0x31, 0x3d }; 
+const uint8_t IS31FL3239_PWM_REG_SUB_SIZE = 8;
+const uint8_t IS31FL3239_UPDATE_REG = 0x49;
+const uint8_t IS31FL3239_SCALING_REG[] = { 0x4c, 0x52, 0x58, 0x5c, 0x62, 0x68 }; 
+const uint8_t IS31FL3239_SCALING_REG_SUB_SIZE = 4;
+const uint8_t IS31FL3239_GCC_REG = 0x6E;
+const uint8_t IS31FL3239_PHD_CLPH_REG = 0x70;
+const uint8_t IS31FL3239_SHORT_DETECT_REG = 0x70;
+const uint8_t IS31FL3239_OPEN_SHORT_DETECT_ENABLE_REG = 0x71;
+const uint8_t IS31FL3239_OPEN_SHORT_REG0 = 0x72;
+const uint8_t IS31FL3239_TEMP_SENSOR_REG = 0x77;
+const uint8_t IS31FL3239_SPREAD_SPECTRUM_REG = 0x78;
+const uint8_t IS31FL3239_RESET_REG = 0x7F;
+
 // * marks register defaults
+// note that IS31FL3239 initalizes all registers to 0
 // 0*: Register auto increment disabled, 1: Register auto increment enabled
-const uint8_t IS31FL3239_MODE1_AI2 = (1 << 7);
-// 0*: don't auto increment bit 1, 1: auto increment bit 1
-const uint8_t IS31FL3239_MODE1_AI1 = (1 << 6);
-// 0*: don't auto increment bit 0, 1: auto increment bit 0
-const uint8_t IS31FL3239_MODE1_AI0 = (1 << 5);
-// 0: normal mode, 1*: low power mode, osc off
-const uint8_t IS31FL3239_MODE1_SLEEP = (1 << 4);
-// 0*: device doesn't respond to i2c bus sub-address 1, 1: responds
-const uint8_t IS31FL3239_MODE1_SUB1 = (1 << 3);
-// 0*: device doesn't respond to i2c bus sub-address 2, 1: responds
-const uint8_t IS31FL3239_MODE1_SUB2 = (1 << 2);
-// 0*: device doesn't respond to i2c bus sub-address 3, 1: responds
-const uint8_t IS31FL3239_MODE1_SUB3 = (1 << 1);
-// 0: device doesn't respond to i2c all-call 3, 1*: responds to all-call
-const uint8_t IS31FL3239_MODE1_ALLCALL = (1 << 0);
+const uint8_t IS31FL3239_CTL_SSD = (1 << 0);
 
-// 0*: Group dimming, 1: Group blinking
-const uint8_t IS31FL3239_MODE2_DMBLNK = (1 << 5);
-// 0*: Output change on Stop command, 1: Output change on ACK
-const uint8_t IS31FL3239_MODE2_OCH = (1 << 3);
-// 0*: WDT disabled, 1: WDT enabled
-const uint8_t IS31FL3239_MODE2_WDTEN = (1 << 2);
-// WDT timeouts
-const uint8_t IS31FL3239_MODE2_WDT_5MS = (0 << 0);
-const uint8_t IS31FL3239_MODE2_WDT_15MS = (1 << 0);
-const uint8_t IS31FL3239_MODE2_WDT_25MS = (2 << 0);
-const uint8_t IS31FL3239_MODE2_WDT_35MS = (3 << 0);
+// 0*: oscillator clock frequency selection
+const uint8_t IS31FL3239_CTL_OSC_16MHZ = (0x0) << 4;
+const uint8_t IS31FL3239_CTL_OSC_8MHZ = (0x1) << 4;
+const uint8_t IS31FL3239_CTL_OSC_1MHZ = (0x2) << 4;
+const uint8_t IS31FL3239_CTL_OSC_500KHZ = (0x3) << 4;
+const uint8_t IS31FL3239_CTL_OSC_250KHZ = (0x4) << 4;
+const uint8_t IS31FL3239_CTL_OSC_125KHZ = (0x5) << 4;
+const uint8_t IS31FL3239_CTL_OSC_62KHZ = (0x6) << 4;
+const uint8_t IS31FL3239_CTL_OSC_31KHZ = (0x7) << 4;
 
-// --- Special function ---
-// Call address to perform software reset, no devices will ACK
-const uint8_t IS31FL3239_SWRST_ADDR = 0x96;  //(0x4b 7-bit addr + ~W)
-const uint8_t IS31FL3239_SWRST_SEQ[2] = {0xa5, 0x5a};
+// 0*: PWM resolution
+const uint8_t IS31FL3239_CTL_PWM_8BIT = (0x0) << 1;
+const uint8_t IS31FL3239_CTL_PWM_10BIT = (0x1) << 1;
+const uint8_t IS31FL3239_CTL_PWM_12BIT = (0x2) << 1;
+const uint8_t IS31FL3239_CTL_PWM_16BIT = (0x3) << 1;
 
-// --- Registers ---2
-// Mode register 1
-const uint8_t IS31FL3239_REG_MODE1 = 0x00;
-// Mode register 2
-const uint8_t IS31FL3239_REG_MODE2 = 0x01;
-// PWM0
-const uint8_t IS31FL3239_REG_PWM0 = 0x02;
-// Group PWM
-const uint8_t IS31FL3239_REG_GROUPPWM = 0x0a;
-// Group Freq
-const uint8_t IS31FL3239_REG_GROUPFREQ = 0x0b;
-// LEDOUTx registers
-const uint8_t IS31FL3239_REG_LEDOUT0 = 0x0c;
-const uint8_t IS31FL3239_REG_LEDOUT1 = 0x0d;
-// Sub-address registers
-const uint8_t IS31FL3239_REG_SUBADR1 = 0x0e;  // default: 0x92 (8-bit addr)
-const uint8_t IS31FL3239_REG_SUBADR2 = 0x0f;  // default: 0x94 (8-bit addr)
-const uint8_t IS31FL3239_REG_SUBADR3 = 0x10;  // default: 0x98 (8-bit addr)
-// All call address register
-const uint8_t IS31FL3239_REG_ALLCALLADR = 0x11;  // default: 0xd0 (8-bit addr)
 
-// --- Output modes ---
-static const uint8_t LDR_OFF = 0x00;
-static const uint8_t LDR_ON = 0x01;
-static const uint8_t LDR_PWM = 0x02;
-static const uint8_t LDR_GRPPWM = 0x03;
 
 void IS31FL3239Output::setup() {
   ESP_LOGCONFIG(TAG, "Setting up IS31FL3239OutputComponent...");
@@ -76,35 +59,53 @@ void IS31FL3239Output::setup() {
   ESP_LOGV(TAG, "  Resetting all devices on the bus...");
 
   // Reset all devices on the bus
-  if (this->bus_->write(IS31FL3239_SWRST_ADDR >> 1, IS31FL3239_SWRST_SEQ, 2) != i2c::ERROR_OK) {
+  //if (this->bus_->write(IS31FL3239_SWRST_ADDR >> 1, IS31FL3239_RESET_REG, 0) != i2c::ERROR_OK) {
+
+  // Reset device
+  if (!this->write_byte(IS31FL3239_RESET_REG, 0)) {
     ESP_LOGE(TAG, "RESET failed");
     this->mark_failed();
     return;
   }
 
-  // Auto increment registers, and respond to all-call address
-  if (!this->write_byte(IS31FL3239_REG_MODE1, IS31FL3239_MODE1_AI2 | IS31FL3239_MODE1_ALLCALL)) {
-    ESP_LOGE(TAG, "MODE1 failed");
+  // Enable device
+  if (!this->write_byte(IS31FL3239_CTL_REG, IS31FL3239_CTL_SSD)) {
+    ESP_LOGE(TAG, "ENABLE failed");
     this->mark_failed();
     return;
   }
-  if (!this->write_byte(IS31FL3239_REG_MODE2, this->mode_)) {
-    ESP_LOGE(TAG, "MODE2 failed");
+
+  // Set Global Current Control 
+  if (!this->write_byte(IS31FL3239_GCC_REG, 0xFF)) {
+    ESP_LOGE(TAG, "GLOBAL CURRENT failed");
     this->mark_failed();
     return;
   }
-  // Set all 3 outputs to be individually controlled
-  // TODO: think of a way to support group dimming
-  if (!this->write_byte(IS31FL3239_REG_LEDOUT0, (LDR_PWM << 6) | (LDR_PWM << 4) | (LDR_PWM << 2) | (LDR_PWM << 0))) {
-    ESP_LOGE(TAG, "LEDOUT0 failed");
+
+  // Sanity check: turn on 1 led
+  if (!this->write_byte(0x4c, 0xFF)) {
+    ESP_LOGE(TAG, "RESET failed");
     this->mark_failed();
     return;
   }
-  if (!this->write_byte(IS31FL3239_REG_LEDOUT1, (LDR_PWM << 6) | (LDR_PWM << 4) | (LDR_PWM << 2) | (LDR_PWM << 0))) {
-    ESP_LOGE(TAG, "LEDOUT1 failed");
+  if (!this->write_byte(0x05, 0xFF)) {
+    ESP_LOGE(TAG, "RESET failed");
     this->mark_failed();
     return;
   }
+  if (!this->write_byte(0x06, 0xFF)) {
+    ESP_LOGE(TAG, "RESET failed");
+    this->mark_failed();
+    return;
+  }
+  
+  // update
+  if (!this->write_byte(IS31FL3239_UPDATE_REG, 0x00)) {
+    ESP_LOGE(TAG, "UPDATE failed");
+    this->mark_failed();
+    return;
+  }
+
   delayMicroseconds(500);
 
   this->loop();
@@ -112,7 +113,7 @@ void IS31FL3239Output::setup() {
 
 void IS31FL3239Output::dump_config() {
   ESP_LOGCONFIG(TAG, "IS31FL3239:");
-  ESP_LOGCONFIG(TAG, "  Mode: 0x%02X", this->mode_);
+  //ESP_LOGCONFIG(TAG, "  Mode: 0x%02X", this->mode_);
 
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Setting up IS31FL3239 failed!");
@@ -127,11 +128,11 @@ void IS31FL3239Output::loop() {
     uint8_t pwm = this->pwm_amounts_[channel];
     ESP_LOGVV(TAG, "Channel %02u: pwm=%04u ", channel, pwm);
 
-    uint8_t reg = IS31FL3239_REG_PWM0 + channel;
-    if (!this->write_byte(reg, pwm)) {
-      this->status_set_warning();
-      return;
-    }
+    //uint8_t reg = IS31FL3239_REG_PWM0 + channel;
+    //if (!this->write_byte(reg, pwm)) {
+    //  this->status_set_warning();
+    //  return;
+    //}
   }
 
   this->status_clear_warning();

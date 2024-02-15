@@ -8,18 +8,6 @@
 namespace esphome {
 namespace is31fl3239 {
 
-// 0*: Group dimming, 1: Group blinking
-extern const uint8_t IS31FL3239_MODE2_DMBLNK;
-// 0*: Output change on Stop command, 1: Output change on ACK
-extern const uint8_t IS31FL3239_MODE2_OCH;
-// 0*: WDT disabled, 1: WDT enabled
-extern const uint8_t IS31FL3239_MODE2_WDTEN;
-// WDT timeouts
-extern const uint8_t IS31FL3239_MODE2_WDT_5MS;
-extern const uint8_t IS31FL3239_MODE2_WDT_15MS;
-extern const uint8_t IS31FL3239_MODE2_WDT_25MS;
-extern const uint8_t IS31FL3239_MODE2_WDT_35MS;
-
 class IS31FL3239Output;
 
 class IS31FL3239Channel : public output::FloatOutput, public Parented<IS31FL3239Output> {
@@ -37,7 +25,7 @@ class IS31FL3239Channel : public output::FloatOutput, public Parented<IS31FL3239
 /// IS31FL3239 float output component.
 class IS31FL3239Output : public Component, public i2c::I2CDevice {
  public:
-  IS31FL3239Output(uint8_t mode = IS31FL3239_MODE2_OCH) : mode_(mode) {}
+  IS31FL3239Output(bool bit16_mode = false) : bit16_mode_(bit16_mode) {}
 
   void register_channel(IS31FL3239Channel *channel);
 
@@ -55,13 +43,18 @@ class IS31FL3239Output : public Component, public i2c::I2CDevice {
     this->pwm_amounts_[channel] = value;
   }
 
+  bool bit16_mode_{true};
+  uint8_t led_scaling_[24] = {
+  	0,
+  };
+  uint8_t pwm_amounts_[256] = {
+      0,
+  };
+
   uint8_t mode_;
 
   uint8_t min_channel_{0xFF};
   uint8_t max_channel_{0x00};
-  uint8_t pwm_amounts_[256] = {
-      0,
-  };
   bool update_{true};
 };
 
