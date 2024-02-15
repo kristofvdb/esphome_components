@@ -52,7 +52,6 @@ const uint8_t IS31FL3239_CTL_PWM_12BIT = (0x2) << 1;
 const uint8_t IS31FL3239_CTL_PWM_16BIT = (0x3) << 1;
 
 
-
 void IS31FL3239Output::setup() {
   ESP_LOGCONFIG(TAG, "Setting up IS31FL3239OutputComponent...");
 
@@ -68,12 +67,7 @@ void IS31FL3239Output::setup() {
     return;
   }
 
-  // Enable device
-  if (!this->write_byte(IS31FL3239_CTL_REG, IS31FL3239_CTL_SSD)) {
-    ESP_LOGE(TAG, "ENABLE failed");
-    this->mark_failed();
-    return;
-  }
+  enable(true);
 
   // Set Global Current Control 
   if (!this->write_byte(IS31FL3239_GCC_REG, 0xFF)) {
@@ -86,7 +80,7 @@ void IS31FL3239Output::setup() {
   //
   for (int channelNo = 0 ; channelNo < 24 ; channelNo++)
   {
-    set_channel_pwm(channelNo, 0x40);
+    set_channel_pwm(channelNo, 0x00);
     set_channel_scaling(channelNo, 0x80);
   }   
     
@@ -109,12 +103,6 @@ void IS31FL3239Output::setup() {
   }
 */  
   // update
-  if (!this->write_byte(IS31FL3239_UPDATE_REG, 0x00)) {
-    ESP_LOGE(TAG, "UPDATE failed");
-    this->mark_failed();
-    return;
-  }
-
   delayMicroseconds(500);
 
   this->loop();
@@ -138,6 +126,35 @@ bool IS31FL3239Output::set_channel_pwm(uint8_t channelNo, uint8_t pwm) {
     return false;
   }
   return true;
+}
+
+void IS31FL3239Output::update() {
+  if (!this->write_byte(IS31FL3239_UPDATE_REG, 0x00)) {
+    ESP_LOGE(TAG, "UPDATE failed");
+    this->mark_failed();
+    return;
+  }
+}
+
+void IS31FL3239Output::enable(bool enable) {
+  if(enable)
+  {
+    // Enable device
+    if (!this->write_byte(IS31FL3239_CTL_REG, IS31FL3239_CTL_SSD)) {
+      ESP_LOGE(TAG, "ENABLE failed");
+      this->mark_failed();
+      return;
+    }
+  }
+  else
+  {
+    // Disable device
+    if (!this->write_byte(IS31FL3239_CTL_REG, 0)) {
+      ESP_LOGE(TAG, "DISABLE failed");
+      this->mark_failed();
+      return;
+    }
+  }
 }
 
 void IS31FL3239Output::dump_config() {
@@ -170,12 +187,12 @@ uint8_t IS31FL3239Output::get_scaling_reg_for_channel(uint8_t channel) {
 }
 
 void IS31FL3239Output::loop() {
-//  if (this->min_channel_ == 0xFF || !this->update_)
+  if (this->min_channel_ == 0xFF || !this->update_)
     return;
 
   for (uint8_t channel = this->min_channel_; channel <= this->max_channel_; channel++) {
     uint8_t pwm = this->pwm_amounts_[channel];
-    ESP_LOGVV(TAG, "Channel %02u: pwm=%04u ", channel, pwm);
+    ESP_LOGVV(TAG, "Channel %02u: pwm=%02u ", channel, pwm);
 
     uint8_t reg = get_PWM_reg_for_channel(channel);
     if (!this->write_byte(reg, pwm)) {
@@ -183,7 +200,7 @@ void IS31FL3239Output::loop() {
       return;
     }
   }
-
+  update();
   this->status_clear_warning();
   this->update_ = false;
 }

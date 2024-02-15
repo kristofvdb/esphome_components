@@ -37,6 +37,9 @@ class IS31FL3239Output : public Component, public i2c::I2CDevice {
  protected:
   friend IS31FL3239Channel;
 
+  void enable(bool enable);
+  void update();
+
   uint8_t get_PWM_reg_for_channel(uint8_t channel);
   uint8_t get_scaling_reg_for_channel(uint8_t channel);
   bool set_channel_pwm(uint8_t channelNo, uint8_t pwm);
