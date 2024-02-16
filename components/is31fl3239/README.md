@@ -2,16 +2,15 @@
 
 ## About
 This library implements rudimentary support for is31fl3239. It needs I2C support.
-It is largely based on the code for TLC59208F and should be equal in terms of functionality
+It is largely based on the code for TLC59208F and should be similar in terms of functionality
 
 future improvements:
- optimize register writes in the loop
- support 16 bit mode 
- maintain led current scaling register
- support diagnostic functions
- add sleep mode ()
+- optimize register writes in the loop
+- support 16 bit mode 
+- maintain led current scaling register
+- support diagnostic functions
+- add sleep mode (through enable function)
  
-
 ## Configuration
 
 Tested with two identical components on the same i2c bus 
