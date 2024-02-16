@@ -25,7 +25,7 @@ class IS31FL3239Channel : public output::FloatOutput, public Parented<IS31FL3239
 /// IS31FL3239 float output component.
 class IS31FL3239Output : public Component, public i2c::I2CDevice {
  public:
-  IS31FL3239Output(bool bit16_mode = false) : bit16_mode_(bit16_mode) {}
+  IS31FL3239Output(){}
 
   void register_channel(IS31FL3239Channel *channel);
 
@@ -50,16 +50,15 @@ class IS31FL3239Output : public Component, public i2c::I2CDevice {
       this->update_ = true;
     this->pwm_amounts_[channel] = value;
   }
-
-  bool bit16_mode_{true};
-  uint8_t led_scaling_[24] = {
-  	0xFF,
-  };
+// future implementation:
+// support 16 bit mode and maintain led current scaling register
+//  bool bit16_mode_{true};
+//  uint8_t led_scaling_[24] = {
+//  	0xFF,
+//  };
   uint8_t pwm_amounts_[256] = {
       0,
   };
-
-  uint8_t mode_;
 
   uint8_t min_channel_{0xFF};
   uint8_t max_channel_{0x00};

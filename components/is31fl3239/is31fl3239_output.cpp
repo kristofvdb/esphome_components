@@ -57,9 +57,6 @@ void IS31FL3239Output::setup() {
 
   ESP_LOGV(TAG, "  Resetting all devices on the bus...");
 
-  // Reset all devices on the bus
-  //if (this->bus_->write(IS31FL3239_SWRST_ADDR >> 1, IS31FL3239_RESET_REG, 0) != i2c::ERROR_OK) {
-
   // Reset device
   if (!this->write_byte(IS31FL3239_RESET_REG, 0)) {
     ESP_LOGE(TAG, "RESET failed");
@@ -67,7 +64,7 @@ void IS31FL3239Output::setup() {
     return;
   }
 
-  enable(true);
+  this->enable(true);
 
   // Set Global Current Control 
   if (!this->write_byte(IS31FL3239_GCC_REG, 0xFF)) {
@@ -76,34 +73,18 @@ void IS31FL3239Output::setup() {
     return;
   }
 
-  // turn on all LEDs
+  // turn off all LEDs
   //
   for (int channelNo = 0 ; channelNo < 24 ; channelNo++)
   {
-    set_channel_pwm(channelNo, 0x00);
-    set_channel_scaling(channelNo, 0x80);
+    this->set_channel_pwm(channelNo, 0x00);
+    this->set_channel_scaling(channelNo, 0x80);
   }   
     
-/*
-  // Sanity check: turn on 1 led
-  if (!this->write_byte(0x4c, 0xFF)) {
-    ESP_LOGE(TAG, "RESET failed");
-    this->mark_failed();
-    return;
-  }
-  if (!this->write_byte(0x05, 0xFF)) {
-    ESP_LOGE(TAG, "RESET failed");
-    this->mark_failed();
-    return;
-  }
-  if (!this->write_byte(0x06, 0xFF)) {
-    ESP_LOGE(TAG, "RESET failed");
-    this->mark_failed();
-    return;
-  }
-*/  
+ 
   // update
-  delayMicroseconds(500);
+  //delayMicroseconds(500);
+  this->update();
 
   this->loop();
 }
@@ -159,7 +140,7 @@ void IS31FL3239Output::enable(bool enable) {
 
 void IS31FL3239Output::dump_config() {
   ESP_LOGCONFIG(TAG, "IS31FL3239:");
-  //ESP_LOGCONFIG(TAG, "  Mode: 0x%02X", this->mode_);
+  ESP_LOGCONFIG(TAG, "  dump config to be implemented");
 
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Setting up IS31FL3239 failed!");
@@ -194,13 +175,13 @@ void IS31FL3239Output::loop() {
     uint8_t pwm = this->pwm_amounts_[channel];
     ESP_LOGVV(TAG, "Channel %02u: pwm=%02u ", channel, pwm);
 
-    uint8_t reg = get_PWM_reg_for_channel(channel);
+    uint8_t reg = this->get_PWM_reg_for_channel(channel);
     if (!this->write_byte(reg, pwm)) {
       this->status_set_warning();
       return;
     }
   }
-  update();
+  this->update();
   this->status_clear_warning();
   this->update_ = false;
 }
