@@ -39,7 +39,7 @@ output:
     channel: 2
     is31fl3246_id: 'is31fl3246_1'
 
-# example of one RGB lights
+# example of one RGB light
 # sidenote: grouping can be done on a higher level
 #  by creating "light groups" (helper) 
 light:

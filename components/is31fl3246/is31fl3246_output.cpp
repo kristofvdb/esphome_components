@@ -10,8 +10,6 @@ static const char *const TAG = "is31fl3246";
 
 // This is a minimal implementation
 // Only supports setting the PWM value of a channel with 8 bit PWM
-// No use of diagnostic functionality
-
 
 // --- Registers ---
 // All registers are readable/writable, except reset and update register (0-write triggers functionality)
@@ -39,7 +37,6 @@ const uint8_t IS31FL3246_CTL_OSC_8MHZ = (0x00) << 4;
 const uint8_t IS31FL3246_CTL_OSC_16MHZ = (0x01) << 4;
 const uint8_t IS31FL3246_CTL_OSC_32MHZ = (0x02) << 4;
 
-
 // 0*: PWM resolution
 const uint8_t IS31FL3246_CTL_PWM_8BIT = (0x0) << 1;
 const uint8_t IS31FL3246_CTL_PWM_10BIT = (0x1) << 1;
@@ -55,11 +52,10 @@ const uint8_t IS31FL3246_FMS_SHUTDOWN = 0x03;
 
 const uint8_t FMS = IS31FL3246_FMS_HFP_LFP;
 
-
 void IS31FL3246Output::setup() {
   ESP_LOGCONFIG(TAG, "Setting up IS31FL3246OutputComponent...");
 
-  ESP_LOGV(TAG, "  Resetting all devices on the bus...");
+  ESP_LOGV(TAG, "  Resetting device...");
 
   // Reset device
   if (!this->write_byte(IS31FL3246_RESET_REG, 0)) {
@@ -70,7 +66,7 @@ void IS31FL3246Output::setup() {
 
   this->enable(true);
 
-  // Set Global Current Control 
+  // Set Global Current Control for R,G,B channel
   for (int i = 0 ; i < 3 ; i++) {
     if (!this->write_byte(IS31FL3246_GCCR_REG + i, 0xFF)) {
       ESP_LOGE(TAG, "GLOBAL CURRENT failed");
@@ -91,23 +87,6 @@ void IS31FL3246Output::setup() {
   this->update();
   this->loop();
 }
-/*
- void IS31FL3246A::setHFPWM(uint8_t channel, uint8_t FMS, uint8_t HFPWMLevel_H, uint8_t HFPWMLevel_L)
- {
-     if(channel >= 1 && channel <= 36) {
-     _i2c_bus->writeByte(IS31FL3246A_ADDRESS, (2*channel - 1), HFPWMLevel_L);  // set lower bytes of HF PWM level (0 - 255) for specified led channel
-     _i2c_bus->writeByte(IS31FL3246A_ADDRESS, (2*channel), (FMS << 2) | HFPWMLevel_H);  // set freq control mode and upper 2 bits of HF PWM level for specified led channel
-     }
- }
-
-
- void IS31FL3246A::setLFPWM(uint8_t channel, uint8_t PWMLevel)
- {
-     if(channel >= 1 && channel <= 36) {
-     _i2c_bus->writeByte(IS31FL3246A_ADDRESS, channel + 0x48, PWMLevel);  // set LF PWM level (0 - 255) for specified led channel
-     }
- }
-*/
 
 bool IS31FL3246Output::set_channel_HFPWM(uint8_t channelNo, uint16_t pwm) {
   uint8_t reg =  IS31FL3246_START_HFPWM01L_REG + (channelNo*2);
@@ -118,9 +97,7 @@ bool IS31FL3246Output::set_channel_HFPWM(uint8_t channelNo, uint16_t pwm) {
   if (!this->write_byte(reg, lowVal)) {
     this->status_set_warning();
     return false;
-  }
-  else
-  {
+  } else {
     if (!this->write_byte(reg + 1 , highVal)) {
       this->status_set_warning();
       return false;
@@ -133,7 +110,7 @@ bool IS31FL3246Output::set_channel_HFPWM(uint8_t channelNo, uint16_t pwm) {
 bool IS31FL3246Output::set_channel_LFPWM(uint8_t channelNo, uint8_t pwm) {
   uint8_t reg =  IS31FL3246_START_LFPWM01_REG + channelNo;
 
-  // this only sets the low value of PWM as 8 bit is the only resolution we support
+  // this only sets the low value of PWM, as 8 bit is the only resolution we support
   if (!this->write_byte(reg, pwm)) {
     this->status_set_warning();
     return false;
@@ -194,13 +171,7 @@ void IS31FL3246Output::loop() {
       //this->set_channel_HFPWM(channel, pwm);
       this->pwm_amounts_[36+channel] = pwm;
     }
-/*
-    uint8_t reg = this->get_PWM_reg_for_channel(channel);
-    if (!this->write_byte(reg, pwm)) {
-      this->status_set_warning();
-      return;
-    }
-*/
+  
   }
   this->update();
   this->status_clear_warning();
